@@ -142,7 +142,73 @@
     <div id="chart-container" class="report-container">
         <canvas id="chart"></canvas>
     </div>
+
+
+    <div class="report-container">
+        <h3 style="text-align: center;">Calculator Formula</h3>
+    <br>
+        <ul style="max-width: 600px; margin: 0 auto; text-align: left;">
+            <li><strong>P</strong>: Total number of people</li>
+            <li><strong>\(C_{\text{total}}\)</strong>: Total cost of the the stay</li>
+            <li><strong>\(S_{\%}\)</strong>: Fixed shared percentage of the cost</li>
+            <li><strong>\(C_{\text{fixed}}\)</strong>: Fixed cost shared by everyone</li>
+            <li><strong>\(C_{\text{remaining}}\)</strong>: Remaining variable cost to be split based on nights stayed</li>
+            <li><strong>\(W_n\)</strong>: Total weight for a given night</li>
+
+            <li><strong>\(w_{p,n}\)</strong>: Weight of person \(p\) on night \(n\)</li>
+            <ul style="max-width: 300px; margin: 0 auto; text-align: left;">
+                <li><strong>Single:</strong> \( w = 3 \)</li>
+                <li><strong>Double:</strong> \( w = 2 \)</li>
+                <li><strong>Triple:</strong> \( w = 1 \)</li>
+                <li><strong>None:</strong> \( w = 0 \) (Not staying that night)</li>
+            </ul>
+            <li><strong>\(C_{p,n}\)</strong>: Cost contribution of person \(p\) for night \(n\)</li>
+            <li><strong>\(C_p\)</strong>: Total cost per person</li>
+        </ul>
+    
+        <p style="text-align: center;">
+            \[
+            C_{\text{fixed}} = C_{\text{total}} \times  S_{\%}
+            \]
+        </p>
+        <p style="text-align: center;">
+            \[
+            C_{\text{remaining}} = C_{\text{total}} \times (1 - S_{\%})
+            \]
+        </p>
+    
+        <p style="text-align: center;">
+            \[
+            W_n = \sum w_{p,n}
+            \]
+        </p>
+   
+    
+        <p style="text-align: center;">
+            \[
+            C_{p, n} = \left( \frac{w_{p,n}}{W_n} \right) \times C_{\text{remaining}}
+            \]
+        </p>
+    
+        <p style="text-align: center;">
+            \[
+            C_p = \left( \frac{C_{\text{fixed}}}{P} \right) + \sum C_{p, n}
+            \]
+        </p>
+    </div>
+
+
 </div>
+
+    
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+};
+</script>
+<script id="MathJax-script" async src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 <script>
     function generateTable() {
@@ -160,7 +226,7 @@
         for (let i = 1; i <= numNights; i++) {
             tableHTML += `<th>Night ${i}</th>`;
         }
-        tableHTML += `<th>Special</th></tr></thead><tbody>`;
+        tableHTML += `<th>Special Person</th></tr></thead><tbody>`;
 
         // Generate table rows for each person
         for (let p = 1; p <= numPeople; p++) {
