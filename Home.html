@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FairBnB - Maid to Split    </title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        label {
+            margin: 10px 0;
+            display: block;
+        }
+        input, select, button {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            max-width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .report-container {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .report-container h3 {
+            margin-top: 0;
+            font-size: 1.5em;
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .report-table th, .report-table td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        .report-table th {
+            background-color: #f8f8f8;
+        }
+        .report-table td {
+            background-color: #fafafa;
+        }
+        .total-cost {
+            font-weight: bold;
+            background-color: #f9f9f9;
+        }
+        .total-row {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: right;
+            background-color: #e9f9e9;
+        }
+        .cost-detail {
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+            input, select, button {
+                max-width: 100%;
+            }
+        }
+
+        canvas {
+            max-width: 100%;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>FairBnB - Maid to Split</h1>
+    <form id="cost-form">
+        <label for="TotalCost">Total Cost</label>
+        <input type="number" id="TotalCost" required><br>
+
+        <label for="NumberOfNights">Number of Nights</label>
+        <input type="number" id="NumberOfNights" required><br>
+
+        <label for="NumberOfPeople">Number of People</label>
+        <input type="number" id="NumberOfPeople" required><br>
+
+        <label for="FixedSharedCostPercentage">Fixed Shared Cost Percentage</label>
+        <input type="number" id="FixedSharedCostPercentage" required><br>
+
+        <button type="button" onclick="generateTable()">Generate Table</button>
+    </form>
+
+    <div id="table-container"></div>
+
+    <button type="button" onclick="generateReport()">Generate Report</button>
+
+    <div id="report" class="report-container"></div>
+
+    <button type="button" onclick="generateChart()">Generate Chart</button>
+    <div id="chart-container" class="report-container">
+        <canvas id="chart"></canvas>
+    </div>
+</div>
+
+<script>
+    function generateTable() {
+        const numPeople = document.getElementById('NumberOfPeople').value;
+        const numNights = document.getElementById('NumberOfNights').value;
+        
+        if (numPeople <= 0 || numNights <= 0) {
+            alert('Please enter valid values for number of people and nights.');
+            return;
+        }
+
+        let tableHTML = '<table><thead><tr><th>People / Nights</th>';
+        
+        // Generate table headers for nights
+        for (let i = 1; i <= numNights; i++) {
+            tableHTML += `<th>Night ${i}</th>`;
+        }
+        tableHTML += `<th>Special</th></tr></thead><tbody>`;
+
+        // Generate table rows for each person
+        for (let p = 1; p <= numPeople; p++) {
+            let personLabel = `Person ${p}`;
+            tableHTML += `<tr><td><input type="text" value="${personLabel}" id="personLabel${p}"></td>`;
+            for (let n = 1; n <= numNights; n++) {
+                tableHTML += `<td><select id="person${p}_night${n}">
+                                <option value="None">None</option>
+                                <option value="Single">Single</option>
+                                <option value="Double">Double</option>
+                                <option value="Triple">Triple</option>
+                              </select></td>`;
+            }
+            tableHTML += `<td><input type="checkbox" id="special${p}"></td></tr>`;
+        }
+
+        tableHTML += '</tbody></table>';
+        
+        document.getElementById('table-container').innerHTML = tableHTML;
+    }
+    function generateReport() {
+    const totalCost = parseFloat(document.getElementById('TotalCost').value);
+    const numPeople = parseInt(document.getElementById('NumberOfPeople').value);
+    const numNights = parseInt(document.getElementById('NumberOfNights').value);
+    const fixedSharedCostPercentage = parseFloat(document.getElementById('FixedSharedCostPercentage').value);
+
+    if (!totalCost || numPeople <= 0 || numNights <= 0 || !fixedSharedCostPercentage) {
+        alert('Please fill in all the fields.');
+        return;
+    }
+
+    // Determine the number of non-special people
+    let nonSpecialCount = 0;
+    for (let p = 1; p <= numPeople; p++) {
+        if (!document.getElementById(`special${p}`).checked) {
+            nonSpecialCount++;
+        }
+    }
+
+    if (nonSpecialCount <= 0) {
+        alert('There must be at least one non-special person.');
+        return;
+    }
+
+    // Calculate Fixed Shared Cost and Remaining Cost, excluding special people
+    const fixedSharedCost = (totalCost * (fixedSharedCostPercentage / 100)) / nonSpecialCount;
+    const remainingCost = totalCost * (1 - (fixedSharedCostPercentage / 100));
+
+    // Calculate the report for each person based on their selection for each night
+    let reportHTML = `<h3>FairBnB - Maid to Split</h3>`;
+    reportHTML += `<div class="cost-detail"><strong>Fixed Shared Cost per Person (excluding special):</strong> ${fixedSharedCost.toFixed(2)}</div>`;
+    reportHTML += `<div class="cost-detail"><strong>Remaining Cost to be Shared (by Nights):</strong> ${remainingCost.toFixed(2)}</div>`;
+
+    const nightShares = Array(numNights).fill(0); // Reset nightShares for accurate division later
+    let totalNightCost = 0; // This will hold the total cost per night for non-special persons
+    let personNightShares = [];
+
+    for (let p = 1; p <= numPeople; p++) {
+        let personCost = 0;
+        let nightShare = [];
+        let totalPersonNightCost = 0;
+
+        if (document.getElementById(`special${p}`).checked) {
+            // Special person doesn't pay for anything
+            personCost = 0;
+        } else {
+            personCost = fixedSharedCost;
+        }
+
+        for (let n = 1; n <= numNights; n++) {
+            const selection = document.getElementById(`person${p}_night${n}`).value;
+            let nightCost = 0;
+
+            switch (selection) {
+                case 'Single':
+                    nightCost = 3;
+                    break;
+                case 'Double':
+                    nightCost = 2;
+                    break;
+                case 'Triple':
+                    nightCost = 1;
+                    break;
+                default:
+                    nightCost = 0;
+            }
+
+            if (!document.getElementById(`special${p}`).checked) {
+                nightShares[n - 1] += nightCost;
+            }
+
+            nightShare.push(nightCost);
+            totalPersonNightCost += nightCost;
+        }
+
+        personNightShares.push({ person: p, cost: personCost, nightShare, totalNightCost: totalPersonNightCost });
+    }
+
+    // Calculate the total cost for all non-special people
+    totalNightCost = nightShares.reduce((acc, share) => acc + share, 0);
+
+    // If the totalNightCost is zero, it implies no non-special person has paid anything for nights, which is an error
+    if (totalNightCost <= 0) {
+        alert("There is an issue with the night costs. Please make sure there are selections for non-special people.");
+        return;
+    }
+
+    // Table for the report
+    reportHTML += `<table class="report-table"><thead><tr><th>Person</th><th>Fixed Share</th>`;
+    
+    for (let n = 1; n <= numNights; n++) {
+        reportHTML += `<th>Night ${n}</th>`;
+    }
+
+    reportHTML += `<th>Total Cost</th></tr></thead><tbody>`;
+
+    personNightShares.forEach(person => {
+        if (person.cost === 0) return; // Skip special person
+        
+        reportHTML += `<tr>
+            <td>${document.getElementById(`personLabel${person.person}`).value || `Person ${person.person}`}</td>
+            <td>${person.cost.toFixed(2)}</td>`;
+            
+        let totalPersonCost = person.cost; // Start with the fixed cost
+        person.nightShare.forEach((nightCost, index) => {
+            // Only calculate the night share for non-special persons
+            const nightShareCost = (nightCost / totalNightCost) * remainingCost;
+            reportHTML += `<td>${nightShareCost.toFixed(2)}</td>`;
+            totalPersonCost += nightShareCost;
+        });
+
+        reportHTML += `<td>${totalPersonCost.toFixed(2)}</td></tr>`;
+    });
+
+    reportHTML += `</tbody></table>`;
+    
+    document.getElementById('report').innerHTML = reportHTML;
+}
+
+function generateChart() {
+    const numPeople = parseInt(document.getElementById('NumberOfPeople').value);
+    const numNights = parseInt(document.getElementById('NumberOfNights').value);
+    const totalCost = parseFloat(document.getElementById('TotalCost').value);
+    const fixedSharedCostPercentage = parseFloat(document.getElementById('FixedSharedCostPercentage').value);
+
+    // Determine the number of non-special people
+    let nonSpecialCount = 0;
+    for (let p = 1; p <= numPeople; p++) {
+        if (!document.getElementById(`special${p}`).checked) {
+            nonSpecialCount++;
+        }
+    }
+
+    if (nonSpecialCount <= 0) {
+        alert('There must be at least one non-special person.');
+        return;
+    }
+
+    const fixedSharedCost = (totalCost * (fixedSharedCostPercentage / 100)) / nonSpecialCount;
+    const nightShares = Array(numNights).fill(0); // Reset nightShares for accurate division later
+
+    const chartLabels = [];
+    const nightData = Array(numNights).fill(0).map(() => Array(numPeople).fill(0));
+
+    // Collect data for chart, excluding special persons
+    for (let p = 1; p <= numPeople; p++) {
+        if (document.getElementById(`special${p}`).checked) continue; // Skip special person
+        chartLabels.push(document.getElementById(`personLabel${p}`).value || `Person ${p}`);
+
+        for (let n = 1; n <= numNights; n++) {
+            const selection = document.getElementById(`person${p}_night${n}`).value;
+            let nightCost = 0;
+            switch (selection) {
+                case 'Single':
+                    nightCost = 3;
+                    break;
+                case 'Double':
+                    nightCost = 2;
+                    break;
+                case 'Triple':
+                    nightCost = 1;
+                    break;
+                default:
+                    nightCost = 0;
+            }
+            nightData[n - 1][p - 1] = nightCost;
+            nightShares[n - 1] += nightCost;
+        }
+    }
+
+    // If there is no valid night data, stop
+    if (nightShares.reduce((acc, share) => acc + share, 0) <= 0) {
+        alert("There is an issue with the night costs. Please make sure there are selections for non-special people.");
+        return;
+    }
+
+    // Reset existing chart if any
+    if (window.myChart) {
+        window.myChart.destroy();
+    }
+
+    // Prepare the datasets
+    const datasets = [];
+
+    // Add datasets for each person
+    for (let p = 0; p < numPeople; p++) {
+        if (document.getElementById(`special${p + 1}`).checked) continue; // Skip special person
+        const personData = [];
+        for (let n = 0; n < numNights; n++) {
+            personData.push(nightData[n][p]);
+        }
+        datasets.push({
+            label: chartLabels[p],
+            data: personData,
+            backgroundColor: `rgba(${(p * 50) % 255}, ${(p * 100) % 255}, ${(p * 150) % 255}, 0.5)`,
+            stack: 'stack1'
+        });
+    }
+
+    // Create new chart
+    const ctx = document.getElementById('chart').getContext('2d');
+    window.myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Array.from({ length: numNights }, (_, i) => `Night ${i + 1}`),
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    stacked: true
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+
+
+
+</script>
+
+</body>
+</html>
