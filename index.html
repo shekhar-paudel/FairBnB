@@ -279,10 +279,21 @@
 
     personNightShares.forEach(person => {
         if (person.cost === 0) return; // Skip special person
+
+        let personName = document.getElementById(`personLabel${person.person}`).value || `Person ${person.person}`;
         
+        // Replace name
+        personName = personName.replace("ffie", "ffie(aka cutie)");
+        
+        reportHTML += `<tr>
+            <td>${personName}</td>
+            <td>${person.cost.toFixed(2)}</td>`;
+        /*
         reportHTML += `<tr>
             <td>${document.getElementById(`personLabel${person.person}`).value || `Person ${person.person}`}</td>
             <td>${person.cost.toFixed(2)}</td>`;
+
+            */
             
         let totalPersonCost = person.cost; // Start with the fixed cost
         person.nightShare.forEach((nightCost, index) => {
